@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA CHAT</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5fb;color:#17243b}
+.app{max-width:1100px;height:100vh;margin:auto;background:white;display:flex;overflow:hidden}
+.sidebar{width:340px;border-left:1px solid #e7edf5;display:flex;flex-direction:column}
+.brand{padding:22px;background:#1769e8;color:white;font-size:24px;font-weight:bold}
+.search{padding:14px}
+.search input{width:100%;padding:13px;border:0;border-radius:12px;background:#f1f4f9;font-size:15px}
+.contacts{overflow:auto}
+.contact{padding:17px;display:flex;gap:12px;align-items:center;cursor:pointer;border-bottom:1px solid #f0f2f6}
+.contact:hover,.contact.active{background:#eef5ff}
+.avatar{width:46px;height:46px;border-radius:50%;background:#dceaff;color:#1769e8;display:grid;place-items:center;font-size:19px;font-weight:bold}
+.info{flex:1;min-width:0}
+.info b{display:block;margin-bottom:6px}
+.info small{color:#8290a5}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.top{padding:17px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #edf0f5}
+.status{font-size:12px;color:#16a36a;margin-top:5px}
+.messages{flex:1;padding:20px;overflow:auto;background:#f6f8fc;display:flex;flex-direction:column;gap:12px}
+.bubble{max-width:75%;padding:12px 16px;border-radius:16px;background:white;align-self:flex-start;box-shadow:0 2px 8px #00000008;overflow-wrap:anywhere}
+.bubble.me{align-self:flex-end;background:#1769e8;color:white}
+.time{display:block;font-size:10px;opacity:.65;margin-top:7px}
+.composer{padding:14px;display:flex;gap:9px;border-top:1px solid #edf0f5}
+.composer input{flex:1;min-width:0;border:0;background:#f1f4f9;padding:14px;border-radius:14px;font-size:15px;outline:none}
+button{border:0;background:#1769e8;color:white;padding:0 20px;border-radius:13px;font-size:15px;cursor:pointer}
+.empty{margin:auto;text-align:center;color:#8290a5}
+@media(max-width:650px){
+.sidebar{width:100%}
+.main{display:none}
+.app.chat-open .sidebar{display:none}
+.app.chat-open .main{display:flex;width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<aside class="sidebar">
+<div class="brand">✦ NOVA CHAT</div>
+<div class="search"><input id="search" placeholder="جستجوی گفتگو..."></div>
+<div class="contacts" id="contacts"></div>
+</aside>
+<main class="main">
+<div class="top">
+<button id="back" style="display:none">←</button>
+<div class="avatar" id="topAvatar">N</div>
+<div><b id="topName">به نووا خوش آمدی</b><div class="status">● آماده گفتگو</div></div>
+</div>
+<div class="messages" id="messages">
+<div class="empty">✦<h3>به NOVA CHAT خوش آمدی</h3>یک گفتگو انتخاب کن.</div>
+</div>
+<div class="composer">
+<input id="message" placeholder="پیام خود را بنویس..." disabled>
+<button id="send" disabled>ارسال</button>
+</div>
+</main>
+</div>
+<script>
+const people=[
+{name:"پشتیبانی نووا",avatar:"N",preview:"به NOVA خوش آمدی"},
+{name:"دوست من",avatar:"D",preview:"سلام!"},
+{name:"گفتگوی نمونه",avatar:"G",preview:"اینجا پیام‌ها نمایش داده می‌شوند"}
+];
+let selected=-1;
+const history={};
+const contacts=document.getElementById("contacts");
+const messages=document.getElementById("messages");
+const app=document.getElementById("app");
+function renderContacts(filter=""){
+contacts.innerHTML="";
+people.forEach((p,i)=>{
+if(!p.name.includes(filter))return;
+const el=document.createElement("div");
+el.className="contact "+(selected===i?"active":"");
+el.innerHTML='<div class="avatar">'+p.avatar+'</div><div class="info"><b></b><small></small></div>';
+el.querySelector("b").textContent=p.name;
+el.querySelector("small").textContent=p.preview;
+el.onclick=()=>openChat(i);
+contacts.appendChild(el);
+});
+}
+function addBubble(text,mine){
+const b=document.createElement("div");
+b.className="bubble"+(mine?" me":"");
+b.append(document.createTextNode(text));
+const t=document.createElement("span");
+t.className="time";
+t.textContent=new Date().toLocaleTimeString("fa-IR",{hour:"2-digit",minute:"2-digit"});
+b.appendChild(t);
+messages.appendChild(b);
+messages.scrollTop=messages.scrollHeight;
+}
+function openChat(i){
+selected=i;
+app.classList.add("chat-open");
+document.getElementById("topName").textContent=people[i].name;
+document.getElementById("topAvatar").textContent=people[i].avatar;
+document.getElementById("message").disabled=false;
+document.getElementById("send").disabled=false;
+messages.innerHTML="";
+(history[i]||[]).forEach(m=>addBubble(m.text,m.mine));
+renderContacts(document.getElementById("search").value);
+}
+function sendMessage(){
+const input=document.getElementById("message");
+const text=input.value.trim();
+if(!text||selected<0)return;
+history[selected]??=[];
+history[selected].push({text,mine:true});
+addBubble(text,true);
+people[selected].preview=text;
+input.value="";
+renderContacts(document.getElementById("search").value);
+}
+document.getElementById("send").onclick=sendMessage;
+document.getElementById("message").addEventListener("keydown",e=>{
+if(e.key==="Enter")sendMessage();
+});
+document.getElementById("search").oninput=e=>renderContacts(e.target.value);
+document.getElementById("back").onclick=()=>app.classList.remove("chat-open");
+if(innerWidth<=650)document.getElementById("back").style.display="block";
+renderContacts();
+</script>
+</body>
+</html>
